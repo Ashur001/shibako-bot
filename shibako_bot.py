@@ -1,5 +1,5 @@
 import discord
-import os # For loading the token from an environment variable (recommended)
+import os 
 import random
 import time
 from dotenv import load_dotenv
