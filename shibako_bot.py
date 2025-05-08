@@ -1,12 +1,8 @@
 import discord
-import os
-import random
-import time
+from discord.ext import commands
+import os 
 import json
-import requests
-import emoji
-from dotenv import load_dotenv
-import pykakasi # For Romaji conversion
+import asyncio
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,7 +14,7 @@ if BOT_TOKEN is None:
     exit()
 
 # --- Configuration Variables ---
-CONFIG_FILE = 'shibako_phrases.json' # Name of your config file
+CONFIG_FILE = 'shibako_phrases.json' # Json file containing all shibako trigger phrases
 TRIGGER_MAP = {} # Dictionary to map triggers to their config
 RUDE_RESPONSE_CONFIG = {} # Store the global rude response settings
 SHIBA_EMOJI = "<:shiba:1363005589902589982>" # Default emoji string, can be overridden by config
@@ -99,9 +95,15 @@ if not load_config(CONFIG_FILE):
 # Define the intents your bot needs. Message Content is crucial.
 intents = discord.Intents.default()
 intents.message_content = True # Make sure this is enabled in the Discord Developer Portal!
+bot = commands.Bot(command_prefix = '!', intents=intents)
 
-# Create a bot instance with the defined intents
-client = discord.Client(intents=intents)
+# Attach configuration data to bot so cogs have access to data:
+bot.trigger_map = TRIGGER_MAP
+bot.rude_response_config = RUDE_RESPONSE_CONFIG
+bot.error_messages = ERROR_MESSAGES
+bot.config = {
+    "shiba_emoji_string": SHIBA_EMOJI
+}
 
 # Seed the random number generator (for rude responses)
 random.seed()
