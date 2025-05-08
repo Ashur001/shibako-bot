@@ -7,6 +7,7 @@ import asyncio
 # Load environment variables from .env file
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+DEEPL_API_KEY = os.getenv("")
 
 # Check if the bot token is loaded
 if BOT_TOKEN is None:
@@ -19,20 +20,6 @@ TRIGGER_MAP = {} # Dictionary to map triggers to their config
 RUDE_RESPONSE_CONFIG = {} # Store the global rude response settings
 SHIBA_EMOJI = "<:shiba:1363005589902589982>" # Default emoji string, can be overridden by config
 ERROR_MESSAGES = {} # Dictionary for user-facing error messages loaded from config
-
-# --- Instantiate PyKakasi (Simplified Initialization) ---
-# This handles the Japanese to Romaji conversion
-try:
-    # Initialize without the config dictionary (simplest approach)
-    kks = pykakasi.kakasi()
-    # Store the convert method
-    romaji_converter_func = kks.convert
-    print("PyKakasi Romaji converter initialized (Simplified).")
-except Exception as e:
-    print(f"Error initializing PyKakasi: {e}")
-    print("Romaji conversion will not be available.")
-    romaji_converter_func = None
-# --- ---
 
 # --- Function to Load Configuration from JSON ---
 def load_config(filename):
@@ -86,15 +73,12 @@ def load_config(filename):
 
 # --- Load the configuration on startup ---
 if not load_config(CONFIG_FILE):
-    # Decide if bot should exit if config loading fails completely
     print("Warning: Configuration loading failed. Bot functionality may be limited.")
-    # exit() # Uncomment this line if you want the bot to stop on config errors
 # --- ---
 
-# --- Discord Client Setup ---
-# Define the intents your bot needs. Message Content is crucial.
+# --- Bot Object Setup ---
 intents = discord.Intents.default()
-intents.message_content = True # Make sure this is enabled in the Discord Developer Portal!
+intents.message_content = True 
 bot = commands.Bot(command_prefix = '!', intents=intents)
 
 # Attach configuration data to bot so cogs have access to data:
@@ -105,243 +89,63 @@ bot.config = {
     "shiba_emoji_string": SHIBA_EMOJI
 }
 
-# Seed the random number generator (for rude responses)
-random.seed()
-
 # --- Event Handlers ---
-@client.event
+@bot.event
 async def on_ready():
     """Event handler for when the bot logs in and is ready."""
-    print(f'We have logged in as {client.user}')
+    print(f'We have logged in as {bot.user}')
+    print('Loading cogs...')
+
+    for filename in os.listdir('./cogs'):
+        if filename.endswith('.py') and not filename.startswith('_'):
+            try: 
+                await bot.load_extension(f'cogs.{filename[:-3]}')
+                print(f'Loaded cog: {filename}')
+            except Exception as e:
+                print(f'Failed to load cog {filename}: {e}')
+    
     print('Bot is ready!')
     print('-------------------')
 
-@client.event
+@bot.event
 async def on_message(message):
-    """Event handler for when a message is received."""
     # Ignore messages sent by the bot itself to prevent loops
-    if message.author == client.user:
+    if message.author == bot.user:
         return
 
-    #if message.reference:
-        #await message.reply(f"Debugging (Top): Reply detected!")
-        #await message.reply(f"Debugging (Top): Raw message.content: '{message.content}'")
-        #await message.reply(f"Debugging (Top): Lowercase msg_lower: '{message.content.lower()}'")
-
-    # Get message content in lowercase once for efficiency
     msg_lower = message.content.lower()
+    matched_config = bot.trigger_map.get(msg_lower)
+    if matched_config and not message.content.startswith(bot.command_prefix): # Avoid triggering on commands
+        # ... (your trigger response logic using bot.rude_response_config etc.) ...
+        # Example: await message.channel.send(standard_response)
+        return 
 
-    # --- Handle Specific Commands First ---
+    # Pass message along to bot to process the command the standard discord.py way:
+    await bot.process_commands(message):
 
-    # !help Command -> changed to !tasukete
-    if msg_lower == '!tasukete':
-        help_message = f"""{SHIBA_EMOJI} こんにちは！ しばこです。 (Hello! I'm Shibako.)
-
-わたしができること： (Things I can do:)
-`!tasukete` - Shows this help message.
-`!phrases` - Shows all the phrases I might react to.
-`!romaji <japanese text>` - Converts Japanese text to Romaji. (e.g., `!romaji こんにちは`)
-
-いろいろな　フレーズの　れい： (Examples of various phrases I might react to:)
-`say the line shibako`
-`good bot`
-`hi shibako`
-`pat shibako`
-`shibako fetch`
-`!y` / `!n`
-
-(ためしてみてね！ - Try them out!)"""
-        try:
-            await message.channel.send(help_message)
-        except discord.errors.Forbidden:
-            print(f"Error: Cannot send message in channel {message.channel.id}. Missing permissions?")
-        except Exception as e:
-            print(f"Error sending help message: {e}")
-        return # Stop processing after handling the command
-
-    # !phrases Command
-    elif msg_lower == '!phrases':
-        if not TRIGGER_MAP:
-            error_msg = ERROR_MESSAGES.get("phrases_list_empty", "なにも　フレーズが　みつかりません。")
-            await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-            return
-
-        all_triggers = sorted(list(TRIGGER_MAP.keys())) # Get and sort triggers
-
-        header = f"{SHIBA_EMOJI} わたしが　はんのうする　かもしれない　フレーズ： (Phrases I might react to:)\n```\n"
-        footer = "\n```"
-        body = "\n".join(all_triggers)
-        full_message = header + body + footer
-
-        # Check if the message exceeds Discord's approx limit
-        if len(full_message) > 1900: # Leave some buffer room
-             limit_msg = ERROR_MESSAGES.get("phrases_list_too_long", "たくさん　ありすぎて　ぜんぶは　みせられない！")
-             await message.channel.send(f"{SHIBA_EMOJI} {limit_msg}")
-        else:
-            try:
-                await message.channel.send(full_message)
-            except discord.errors.Forbidden:
-                 print(f"Error: Cannot send !phrases list in channel {message.channel.id}. Missing permissions?")
-            except Exception as e:
-                print(f"Error sending phrases list message: {e}")
-        return # Stop processing after handling the command
-
-    # !romaji Command
-    romaji_command = "!romaji "
-    if msg_lower.startswith(romaji_command):
-        if romaji_converter_func: # Check if the converter function is available
-            text_to_convert = message.content[len(romaji_command):].strip()
-            if not text_to_convert:
-                error_msg = ERROR_MESSAGES.get("romaji_no_input", "テキストをいれてください。")
-                await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-                return
-
-            try:
-                # Use the stored convert function directly
-                result = romaji_converter_func(text_to_convert)
-                romaji_parts = [item['hepburn'] for item in result] # Extract Hepburn romaji
-                romaji_text = ' '.join(romaji_parts) # Join parts with spaces manually
-                response = f'{SHIBA_EMOJI} "{romaji_text}"'
-                await message.channel.send(response)
-            except KeyError:
-                print(f"Error during Romaji conversion: 'hepburn' key missing in result for '{text_to_convert}'. Result: {result}")
-                error_msg = ERROR_MESSAGES.get("romaji_conversion_failed", "へんかんできませんでした。")
-                await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-            except Exception as e:
-                print(f"Error during Romaji conversion for '{text_to_convert}': {e}")
-                error_msg = ERROR_MESSAGES.get("romaji_conversion_failed", "へんかんできませんでした。")
-                await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-        else:
-             # Converter was not initialized properly
-             error_msg = ERROR_MESSAGES.get("romaji_converter_unavailable", "ローマジへんかんきはつかえません。")
-             await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-        return # Stop processing after handling the command
-
-    # !translate Command
-    translate_command = "!translate "
-    if msg_lower.startswith(translate_command) or msg_lower.startswith("!tl"):
-        #await message.reply("Debugging: Entered translation command block.")
-        print('TL request received')
-        channel = message.channel.name
-        server = message.guild.name if message.guild else "DM"
-        user = message.author
-
-        # Get the text to translate
-        translateMe = message.content[len("!translate "):].strip() if msg_lower.startswith(translate_command) else message.content[len("!tl "):].strip()
-
-        #await message.reply(f"Debugging: translateMe value: '{translateMe}'")
-        #await message.reply(f"Debugging: message.content: '{message.content}'") 
-        #await message.reply(f"Debugging: message.reference: '{message.reference}'") 
-        print("Translation request: ", translateMe)
-
-        # If no text provided but it's a reply, get the replied message content
-        if not translateMe and message.reference:
-            #await message.reply(f"Debugging: Attempting to fetch replied message with ID: {message.reference.message_id}")
-            try:
-                replied_message = await message.channel.fetch_message(message.reference.message_id)
-                #await message.reply(f"Debugging: Successfully fetched replied message. Content: {replied_message.content}")
-                translateMe = replied_message.content
-            except Exception as e:
-                error_msg = ERROR_MESSAGES.get("translate_fetch_failed", "返信されたメッセージを取得できませんでした。")
-                #await message.reply(f"Debugging: Error fetching replied message: {e}\n{SHIBA_EMOJI} {error_msg}")
-                return
-        elif not translateMe:
-            error_msg = ERROR_MESSAGES.get("translate_no_input", "翻訳するテキストを入力してください。")
-            await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-            return
-        
-
-        if not translateMe:
-            error_msg = ERROR_MESSAGES.get("translate_no_input", "翻訳するテキストを入力してください。")
-            await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-            return
-
-        # Detect language
-        if emoji.demojize(translateMe).isascii():  # Text is EN if all chars (excl emoji) are ascii
-            source_lang = 'EN'
-            target_lang = 'JA'
-        else:  # Else, text is JA
-            source_lang = 'JA'
-            target_lang = 'EN'
-
-        # Get DeepL API key from environment
-        deepl_key = os.getenv('DEEPL_API_KEY')
-        if not deepl_key:
-            error_msg = ERROR_MESSAGES.get("translate_no_api_key", "翻訳APIキーが設定されていません。")
-            await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-            return
-
-        url = "https://api-free.deepl.com/v2/translate"
-        params = {
-            'auth_key': deepl_key,
-            'text': translateMe,
-            'source_lang': source_lang,
-            'target_lang': target_lang
-        }
-
-        try:
-            response = requests.post(url, data=params)
-            response.raise_for_status()  # Raises an HTTPError for bad responses
-            responseJSON = response.json()
-            result = responseJSON['translations'][0]['text']
-            print("Translated output: ", result)
-            await message.reply(result)
-        except requests.exceptions.RequestException as e:
-            print(f"Translation API error: {e}")
-            error_msg = ERROR_MESSAGES.get("translate_api_error", "翻訳APIでエラーが発生しました。")
-            await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-        except KeyError:
-            print(f"Unexpected API response format: {response.text}")
-            error_msg = ERROR_MESSAGES.get("translate_format_error", "翻訳結果の形式が予期せぬものでした。")
-            await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-        except Exception as e:
-            print(f"Unexpected translation error: {e}")
-            error_msg = ERROR_MESSAGES.get("translate_unknown_error", "翻訳中に未知のエラーが発生しました。")
-            await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
-        
-        #return  # Stop processing after handling the command
-
-    # --- Handle Configured Triggers (if no command matched) ---
-    message_sender_id = message.author.id
-    matched_config = TRIGGER_MAP.get(msg_lower) # Check against loaded triggers
-
-    if matched_config:
-        allow_rude = matched_config.get('allow_rude', False)
-        standard_response = matched_config.get('response', '...')
-
-        rude_chance = RUDE_RESPONSE_CONFIG.get('chance', 0.0)
-        rude_prefix = RUDE_RESPONSE_CONFIG.get('prefix', '')
-        rude_template = RUDE_RESPONSE_CONFIG.get('message', '')
-
-        should_be_rude = allow_rude and random.random() < rude_chance
-
-        try:
-            # Check if rude response should be sent and if template is valid
-            if should_be_rude and rude_template and '{message_sender}' in rude_template:
-                if rude_prefix:
-                    time.sleep(1) # Keep the pause effect
-                    await message.channel.send(rude_prefix)
-
-                # Format the rude message (replace placeholder)
-                formatted_rude_message = rude_template.format(message_sender=message_sender_id)
-                time.sleep(1)
-                await message.channel.send(formatted_rude_message)
-            else:
-                # Send the standard response
-                time.sleep(1) # Keep the pause effect
-                await message.channel.send(standard_response)
-        except discord.errors.Forbidden:
-             print(f"Error: Cannot send triggered response in channel {message.channel.id}. Missing permissions?")
-        except Exception as e:
-             print(f"Error sending triggered response: {e}")
-
+# --- Centralized Error Handling ---
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        pass # Ignore command not found errors silently
+    elif isinstance(error, commands.MissingRequiredArgument):
+         await ctx.send(f"{bot.config['shiba_emoji_string']} You missed an argument! Check `!tasukete {ctx.command.name}`.")
+    # Add more specific error handling here
+    else:
+        print(f'Unhandled command error in {ctx.command}: {error}')
+        await ctx.send(f"{bot.config['shiba_emoji_string']} Something went wrong.")
 
 # --- Run the Bot ---
-try:
-    client.run(BOT_TOKEN)
-except discord.LoginFailure:
-    print("Login Failed: Improper token has been passed. Check your .env file.")
-except discord.errors.PrivilegedIntentsRequired:
-     print("Privileged Intents Error: Make sure 'Message Content Intent' is enabled under the 'Privileged Gateway Intents' section on the Discord Developer Portal for your bot application.")
-except Exception as e:
-    print(f"An critical error occurred while running the bot: {e}")
+async def main():
+    async with bot:
+        await bot.start(BOT_TOKEN)
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except discord.LoginFailure:
+        print("Login Failed: Improper token.")
+    except discord.errors.PrivilegedIntentsRequired:
+         print("Privileged Intents Error: Ensure 'Message Content Intent' is enabled.")
+    except Exception as e:
+        print(f"A critical error occurred: {e}")
