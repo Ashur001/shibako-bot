@@ -1,0 +1,45 @@
+{
+  "phrases": [
+    {
+      "name": "shibako_line",
+      "triggers": [
+        "say the line shibako",
+        "say the line shibako!",
+        "shibako say the line"
+      ],
+      "response": "<:shiba:1363005589902589982> はい",
+      "allow_rude_response": true
+    },
+    {
+      "name": "yes",
+      "triggers": [
+        "!y"
+      ],
+      "response": "<:shiba:1363005589902589982> はい",
+      "allow_rude_response": true
+    },
+    {
+      "name": "no",
+      "triggers": [
+        "!n"
+      ],
+      "response": "<:shiba:1363005589902589982> いいえ",
+      "allow_rude_response": true
+    },
+    {
+      "name": "greeting",
+      "triggers": [
+        "hello shibako",
+        "hi shibako",
+        "good morning shibako"
+      ],
+      "response": "<:shiba:1363005589902589982> こんにちは！",
+      "allow_rude_response": false
+    }
+  ],
+  "rude_response": {
+    "prefix": " ... ",
+    "message": "🖕<:shiba:1363005589902589982> <@{message_sender}>",
+    "chance": 0.20
+  }
+}
