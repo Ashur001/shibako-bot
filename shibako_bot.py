@@ -4,7 +4,7 @@ import random
 import time
 import json
 from dotenv import load_dotenv
-import pykakasi # Keep the import
+import pykakasi
 
 load_dotenv()
 
@@ -14,18 +14,16 @@ if BOT_TOKEN is None:
     print("Error: BOT_TOKEN not found. Make sure you have a .env file with BOT_TOKEN set.")
     exit()
 
-# Use the correct filename as requested
+# Use the correct filename
 CONFIG_FILE = 'shibako_phrases.json'
 TRIGGER_MAP = {}
 RUDE_RESPONSE_CONFIG = {}
-SHIBA_EMOJI = None
+SHIBA_EMOJI = "<:shiba:1363005589902589982>" # Default emoji
 ERROR_MESSAGES = {}
 
 # --- Instantiate PyKakasi (Simplified Initialization) ---
 try:
-    # Initialize without the config dictionary
     kks = pykakasi.kakasi()
-    # Store the convert method
     romaji_converter_func = kks.convert
     print("PyKakasi Romaji converter initialized (Simplified).")
 except Exception as e:
@@ -35,10 +33,9 @@ except Exception as e:
 # --- ---
 
 # --- Function to Load Configuration ---
-# (load_config function remains the same as the previous version)
 def load_config(filename):
     """Loads configuration from a JSON file and builds the trigger map."""
-    global TRIGGER_MAP, RUDE_RESPONSE_CONFIG, SHIBA_EMOJI, ERROR_MESSAGES # Add ERROR_MESSAGES
+    global TRIGGER_MAP, RUDE_RESPONSE_CONFIG, SHIBA_EMOJI, ERROR_MESSAGES
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             config_data = json.load(f)
@@ -55,8 +52,9 @@ def load_config(filename):
 
         TRIGGER_MAP = new_trigger_map
         RUDE_RESPONSE_CONFIG = config_data.get('rude_response', {})
-        SHIBA_EMOJI = config_data.get('shiba_emoji_string', '<:shiba:1363005589902589982>')
-        ERROR_MESSAGES = config_data.get('error_messages', {}) # Load error messages
+        # Load emoji string, keeping default if not found
+        SHIBA_EMOJI = config_data.get('shiba_emoji_string', SHIBA_EMOJI)
+        ERROR_MESSAGES = config_data.get('error_messages', {})
 
         print(f"Loaded configuration from {filename}")
         print(f"Found {len(TRIGGER_MAP)} triggers.")
@@ -104,9 +102,24 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    # Process commands first
+    msg_lower = message.content.lower()
+
+    # --- Handle Help Command ---
+    if msg_lower == '!help':
+        help_message = f"""{SHIBA_EMOJI} こんにちは！ しばこです。 (Hello! I'm Shibako.)
+
+わたしができること： (Things I can do:)
+`!help` - Shows this help message.
+`!romaji <japanese text>` - Converts Japanese text to Romaji. (e.g., `!romaji こんにちは`)
+
+あとは、いろいろな　フレーズに　はんのうするかも…？ (Also, I might react to various phrases...?)"""
+        await message.channel.send(help_message)
+        return # Stop processing after handling the command
+
     # --- Handle Romaji Command ---
     romaji_command = "!romaji "
-    if message.content.lower().startswith(romaji_command):
+    if msg_lower.startswith(romaji_command):
         # Check if the converter function is available
         if romaji_converter_func:
             text_to_convert = message.content[len(romaji_command):].strip()
@@ -116,15 +129,12 @@ async def on_message(message):
                 return
 
             try:
-                # Use the stored convert function directly
                 result = romaji_converter_func(text_to_convert)
-                # Process the result - convert returns a list of dicts
-                # Each dict has keys like 'orig', 'hira', 'kana', 'hepburn'
-                romaji_parts = [item['hepburn'] for item in result] # Extract Hepburn romaji
-                romaji_text = ' '.join(romaji_parts) # Join parts with spaces manually
+                romaji_parts = [item['hepburn'] for item in result]
+                romaji_text = ' '.join(romaji_parts)
                 response = f'{SHIBA_EMOJI} "{romaji_text}"'
                 await message.channel.send(response)
-            except KeyError: # Handle cases where 'hepburn' might be missing (unlikely but safe)
+            except KeyError:
                 print(f"Error during Romaji conversion: 'hepburn' key missing in result for '{text_to_convert}'. Result: {result}")
                 error_msg = ERROR_MESSAGES.get("romaji_conversion_failed", "へんかんできませんでした。")
                 await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
@@ -138,10 +148,10 @@ async def on_message(message):
         return # Stop processing after handling the command
 
     # --- Handle Configured Triggers ---
-    # (This part remains the same as the previous version)
-    message_content_lower = message.content.lower()
+    # (Only check these if it wasn't a specific command above)
     message_sender_id = message.author.id
-    matched_config = TRIGGER_MAP.get(message_content_lower)
+    # Use msg_lower which is already calculated
+    matched_config = TRIGGER_MAP.get(msg_lower)
 
     if matched_config:
         allow_rude = matched_config.get('allow_rude', False)
