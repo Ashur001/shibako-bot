@@ -14,26 +14,20 @@ if BOT_TOKEN is None:
     print("Error: BOT_TOKEN not found. Make sure you have a .env file with BOT_TOKEN set.")
     exit()
 
+# Use the correct filename as requested
 CONFIG_FILE = 'shibako_phrases.json'
 TRIGGER_MAP = {}
 RUDE_RESPONSE_CONFIG = {}
 SHIBA_EMOJI = None
 ERROR_MESSAGES = {}
 
-# --- Instantiate PyKakasi (Updated API) ---
+# --- Instantiate PyKakasi (Simplified Initialization) ---
 try:
-    # Configure directly during instantiation
-    kks = pykakasi.kakasi(config={
-        'J': 'a',         # Convert Japanese characters (Kanji) to ascii (Romaji)
-        'H': 'a',         # Convert Hiragana to ascii (Romaji)
-        'K': 'a',         # Convert Katakana to ascii (Romaji)
-        'r': 'Hepburn',   # Use Hepburn romanization system
-        'S': True,        # Add spaces between Romaji parts
-        'C': False        # Keep Romaji lowercase
-    })
-    # Store the convert method directly
+    # Initialize without the config dictionary
+    kks = pykakasi.kakasi()
+    # Store the convert method
     romaji_converter_func = kks.convert
-    print("PyKakasi Romaji converter initialized (Current API).")
+    print("PyKakasi Romaji converter initialized (Simplified).")
 except Exception as e:
     print(f"Error initializing PyKakasi: {e}")
     print("Romaji conversion will not be available.")
@@ -44,7 +38,7 @@ except Exception as e:
 # (load_config function remains the same as the previous version)
 def load_config(filename):
     """Loads configuration from a JSON file and builds the trigger map."""
-    global TRIGGER_MAP, RUDE_RESPONSE_CONFIG, SHIBA_EMOJI, ERROR_MESSAGES
+    global TRIGGER_MAP, RUDE_RESPONSE_CONFIG, SHIBA_EMOJI, ERROR_MESSAGES # Add ERROR_MESSAGES
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             config_data = json.load(f)
@@ -62,7 +56,7 @@ def load_config(filename):
         TRIGGER_MAP = new_trigger_map
         RUDE_RESPONSE_CONFIG = config_data.get('rude_response', {})
         SHIBA_EMOJI = config_data.get('shiba_emoji_string', '<:shiba:1363005589902589982>')
-        ERROR_MESSAGES = config_data.get('error_messages', {})
+        ERROR_MESSAGES = config_data.get('error_messages', {}) # Load error messages
 
         print(f"Loaded configuration from {filename}")
         print(f"Found {len(TRIGGER_MAP)} triggers.")
@@ -122,15 +116,20 @@ async def on_message(message):
                 return
 
             try:
-                # Use the stored convert function directly (Updated API call)
+                # Use the stored convert function directly
                 result = romaji_converter_func(text_to_convert)
-                # Process the result (structure is the same)
-                romaji_parts = [item['hepburn'] for item in result]
-                romaji_text = ' '.join(romaji_parts)
+                # Process the result - convert returns a list of dicts
+                # Each dict has keys like 'orig', 'hira', 'kana', 'hepburn'
+                romaji_parts = [item['hepburn'] for item in result] # Extract Hepburn romaji
+                romaji_text = ' '.join(romaji_parts) # Join parts with spaces manually
                 response = f'{SHIBA_EMOJI} "{romaji_text}"'
                 await message.channel.send(response)
+            except KeyError: # Handle cases where 'hepburn' might be missing (unlikely but safe)
+                print(f"Error during Romaji conversion: 'hepburn' key missing in result for '{text_to_convert}'. Result: {result}")
+                error_msg = ERROR_MESSAGES.get("romaji_conversion_failed", "へんかんできませんでした。")
+                await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
             except Exception as e:
-                print(f"Error during Romaji conversion: {e}")
+                print(f"Error during Romaji conversion for '{text_to_convert}': {e}")
                 error_msg = ERROR_MESSAGES.get("romaji_conversion_failed", "へんかんできませんでした。")
                 await message.channel.send(f"{SHIBA_EMOJI} {error_msg}")
         else:
