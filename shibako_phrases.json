@@ -5,7 +5,8 @@
       "triggers": [
         "say the line shibako",
         "say the line shibako!",
-        "shibako say the line"
+        "shibako say the line",
+        "tell us the line shibako"
       ],
       "response": "<:shiba:1363005589902589982> はい",
       "allow_rude_response": true
@@ -31,9 +32,100 @@
       "triggers": [
         "hello shibako",
         "hi shibako",
-        "good morning shibako"
+        "good morning shibako",
+        "yo shibako"
       ],
       "response": "<:shiba:1363005589902589982> こんにちは！",
+      "allow_rude_response": false
+    },
+    {
+      "name": "farewell",
+      "triggers": [
+        "bye shibako",
+        "goodbye shibako",
+        "see ya shibako",
+        "cya shibako"
+      ],
+      "response": "<:shiba:1363005589902589982> じゃあね！",
+      "allow_rude_response": false
+    },
+    {
+      "name": "compliment",
+      "triggers": [
+        "good bot",
+        "good shibako",
+        "nice bot",
+        "best bot",
+        "cute bot",
+        "shibako is cute"
+      ],
+      "response": "<:shiba:1363005589902589982> わん！",
+      "allow_rude_response": false
+    },
+    {
+      "name": "insult",
+      "triggers": [
+        "bad bot",
+        "bad shibako",
+        "worst bot",
+        "stupid bot",
+        "shibako is dumb"
+      ],
+      "response": "<:shiba:1363005589902589982> がっかり...",
+      "allow_rude_response": true
+    },
+    {
+      "name": "ask_feeling",
+      "triggers": [
+        "how are you shibako?",
+        "shibako how are you?",
+        "you ok shibako?",
+        "shibako wyd",
+        "wyd shibako"
+      ],
+      "response": "<:shiba:1363005589902589982> まあまあです",
+      "allow_rude_response": false
+    },
+    {
+      "name": "command_fetch",
+      "triggers": [
+        "shibako fetch",
+        "fetch",
+        "go get it shibako",
+        "shibako bring it back"
+      ],
+      "response": "<:shiba:1363005589902589982> ... (何も持ってこない)",
+      "allow_rude_response": true
+    },
+     {
+      "name": "command_sit",
+      "triggers": [
+        "shibako sit",
+        "sit shibako",
+        "sit"
+      ],
+      "response": "<:shiba:1363005589902589982> （座る）",
+      "allow_rude_response": true
+    },
+    {
+      "name": "interaction_pat",
+      "triggers": [
+        "pat shibako",
+        "*pats shibako*",
+        "good dog",
+        "pet shibako"
+      ],
+      "response": "<:shiba:1363005589902589982> （尻尾を振る）",
+      "allow_rude_response": false
+    },
+    {
+      "name": "ask_food",
+      "triggers": [
+        "shibako are you hungry",
+        "want food shibako?",
+        "treat?"
+      ],
+      "response": "<:shiba:1363005589902589982> （餌を期待している目）",
       "allow_rude_response": false
     }
   ],
