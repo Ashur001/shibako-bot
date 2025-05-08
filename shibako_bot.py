@@ -124,12 +124,12 @@ async def on_message(message):
 
     # --- Handle Specific Commands First ---
 
-    # !help Command
-    if msg_lower == '!help':
+    # !help Command -> changed to !tasukete
+    if msg_lower == '!tasukete':
         help_message = f"""{SHIBA_EMOJI} こんにちは！ しばこです。 (Hello! I'm Shibako.)
 
 わたしができること： (Things I can do:)
-`!help` - Shows this help message.
+`!tasukete` - Shows this help message.
 `!phrases` - Shows all the phrases I might react to.
 `!romaji <japanese text>` - Converts Japanese text to Romaji. (e.g., `!romaji こんにちは`)
 

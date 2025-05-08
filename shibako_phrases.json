@@ -7,7 +7,8 @@
         "say the line shibako",
         "say the line shibako!",
         "shibako say the line",
-        "tell us the line shibako"
+        "tell us the line shibako",
+        "台詞を言って芝子"
       ],
       "response": "<:shiba:1363005589902589982> はい",
       "allow_rude_response": true
@@ -34,7 +35,8 @@
         "hello shibako",
         "hi shibako",
         "good morning shibako",
-        "yo shibako"
+        "yo shibako",
+        "おはよう芝子"
       ],
       "response": "<:shiba:1363005589902589982> こんにちは！",
       "allow_rude_response": false
@@ -45,7 +47,9 @@
         "bye shibako",
         "goodbye shibako",
         "see ya shibako",
-        "cya shibako"
+        "cya shibako",
+        "又ね芝子",
+        "またね芝子"
       ],
       "response": "<:shiba:1363005589902589982> じゃあね！",
       "allow_rude_response": false
@@ -82,7 +86,9 @@
         "shibako how are you?",
         "you ok shibako?",
         "shibako wyd",
-        "wyd shibako"
+        "wyd shibako",
+        "何をしてるの芝子",
+        "何をしてるか芝子"
       ],
       "response": "<:shiba:1363005589902589982> まあまあです",
       "allow_rude_response": false
@@ -114,7 +120,8 @@
         "pat shibako",
         "*pats shibako*",
         "good dog",
-        "pet shibako"
+        "pet shibako",
+        "good shibako"
       ],
       "response": "<:shiba:1363005589902589982> （尻尾を振る）",
       "allow_rude_response": false
