@@ -121,7 +121,7 @@ async def on_message(message):
         return 
 
     # Pass message along to bot to process the command the standard discord.py way:
-    await bot.process_commands(message):
+    await bot.process_commands(message)
 
 # --- Centralized Error Handling ---
 @bot.event
