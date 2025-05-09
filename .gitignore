@@ -57,6 +57,7 @@ cover/
 
 # Django stuff:
 *.log
+<<<<<<< HEAD
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -174,3 +175,8 @@ cython_debug/
 .pypirc
 
 .env~
+=======
+*.swp
+.venv
+venv/
+>>>>>>> origin/master
