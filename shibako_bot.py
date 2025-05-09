@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-DEEPL_API_KEY = os.getenv("")
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
 # Check if the bot token is loaded
 if BOT_TOKEN is None:
@@ -87,7 +87,8 @@ bot.trigger_map = TRIGGER_MAP
 bot.rude_response_config = RUDE_RESPONSE_CONFIG
 bot.error_messages = ERROR_MESSAGES
 bot.config = {
-    "shiba_emoji_string": SHIBA_EMOJI
+    "shiba_emoji_string": SHIBA_EMOJI,
+    "deepl_api_key": DEEPL_API_KEY
 }
 
 # --- Event Handlers ---
@@ -110,31 +111,44 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    """
+    Processes every message.
+    - Ignores messages from the bot itself.
+    - Allows ListenerCog (and other listeners) to act on the message.
+    - Then, processes the message for commands.
+    """
     # Ignore messages sent by the bot itself to prevent loops
     if message.author == bot.user:
         return
 
-    msg_lower = message.content.lower()
-    matched_config = bot.trigger_map.get(msg_lower)
-    if matched_config and not message.content.startswith(bot.command_prefix): # Avoid triggering on commands
-        # ... (your trigger response logic using bot.rude_response_config etc.) ...
-        # Example: await message.channel.send(standard_response)
-        return 
+    # The ListenerCog's on_message (and any other cog listeners for on_message)
+    # will be called automatically by the event dispatcher before this.
+    # The ListenerCog should handle its own logic for triggers and return if it processes a message.
 
-    # Pass message along to bot to process the command the standard discord.py way:
+    # After listeners have had a chance, process for commands.
     await bot.process_commands(message)
 
 # --- Centralized Error Handling ---
 @bot.event
-async def on_command_error(ctx, error):
+async def on_command_error(ctx: commands.Context, error: commands.CommandError): # Added type hints
+    """Handles errors that occur during command processing."""
     if isinstance(error, commands.CommandNotFound):
-        pass # Ignore command not found errors silently
+        # Optionally, you can send a message or just log it
+        # print(f"Command not found: {ctx.invoked_with}")
+        pass # Ignore command not found errors silently for the user
     elif isinstance(error, commands.MissingRequiredArgument):
-         await ctx.send(f"{bot.config['shiba_emoji_string']} You missed an argument! Check `!tasukete {ctx.command.name}`.")
-    # Add more specific error handling here
+        # Provide more specific help if possible
+        param_name = error.param.name if error.param else "an argument"
+        await ctx.send(f"{bot.config['shiba_emoji_string']} You missed the '{param_name}' argument! Check `!tasukete {ctx.command.name}` for help.")
+    elif isinstance(error, commands.CommandInvokeError):
+        original = error.original
+        print(f'Error in command {ctx.command.qualified_name}: {original}')
+        await ctx.send(f"{bot.config['shiba_emoji_string']} An error occurred while running the command: {original.__class__.__name__}")
+    elif isinstance(error, commands.CheckFailure):
+        await ctx.send(f"{bot.config['shiba_emoji_string']} You don't have permission to use this command.")
     else:
-        print(f'Unhandled command error in {ctx.command}: {error}')
-        await ctx.send(f"{bot.config['shiba_emoji_string']} Something went wrong.")
+        print(f'Unhandled command error in command {ctx.command if ctx.command else "UnknownCommand"}: {error}')
+        await ctx.send(f"{bot.config['shiba_emoji_string']} An unexpected error occurred with that command.")
 
 # --- Run the Bot ---
 async def main():
