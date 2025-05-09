@@ -97,17 +97,22 @@ class JpCog(commands.Cog):
                 result = self.kks.convert(text_to_convert)
                 furigana_parts = []
                 for item in result:
-                    if item['kunrei'] or item['on']:
-                        reading = item['kunrei'] if item['kunrei'] else item['on']
-                        furigana_parts.append(f"{item['orig']}「{reading}」")
+                    # Check if a hiragana reading exists and is different from the original
+                    if item.get('hira') and item['orig'] != item['hira']:
+                        # Format as Original「ひらがな」
+                        furigana_parts.append(f"{item['orig']}「{item['hira']}」")
                     else:
-                        furigana_parts.append(item['orig']) # Keep original if no reading found
+                        # Otherwise, just keep the original text (already kana, punctuation, etc.)
+                        furigana_parts.append(item['orig'])
 
+                # Join the parts together
                 furigana_text = "".join(furigana_parts)
+                # Format the final response message
                 response = f"input: {text_to_convert}\nmessage: {furigana_text}"
                 await ctx.send(response) # Use ctx.send
 
             except Exception as e:
+                # Catching a general exception here, specific KeyError/IndexError might be helpful
                 print(f"Error during Furigana conversion for '{text_to_convert}': {e}")
                 error_msg = self.error_messages.get("furigana_conversion_failed", "Furigana conversion failed.")
                 await ctx.send(f"{self.shiba_emoji} {error_msg}")
@@ -199,18 +204,17 @@ class JpCog(commands.Cog):
             try:
                 kks_result = self.kks.convert(original_text)
 
-                # Furigana Formatting
+                # Furigana Formatting (UPDATED)
                 furigana_parts = []
-                romaji_parts = []
+                romaji_parts = [] # Keep romaji logic separate
                 for item in kks_result:
-                    # Furigana: orig「reading」
-                    if item['kunrei'] or item['on']:
-                        reading = item['kunrei'] if item['kunrei'] else item['on']
-                        furigana_parts.append(f"{item['orig']}「{reading}」")
+                    # Furigana: orig「hira」 if hira exists and is different
+                    if item.get('hira') and item['orig'] != item['hira']:
+                        furigana_parts.append(f"{item['orig']}「{item['hira']}」")
                     else:
                         furigana_parts.append(item['orig']) # Keep original if no reading found
 
-                    # Romaji: collect hepburn reading
+                    # Romaji: collect hepburn reading (keep this as is)
                     romaji_parts.append(item.get('hepburn', item['orig'])) # Use orig as fallback if hepburn missing
 
                 furigana_text = "".join(furigana_parts)
