@@ -290,13 +290,18 @@ class JpCog(commands.Cog):
 
 
 # --- Setup function (Conventional for loading extensions) ---
-# This allows you to use bot.load_extension('jp_cog')
-# However, passing external resources like ERROR_MESSAGES is easier
-# by manually adding the cog instance in main.py's setup_hook.
-# We include this setup function definition for completeness, but
-# the main.py snippet below shows the manual add_cog approach.
+# This function is called by bot.load_extension
 async def setup(bot):
-    # Assuming ERROR_MESSAGES and SHIBA_EMOJI are somehow accessible here,
-    # e.g., stored on the bot instance: bot.error_messages, bot.shiba_emoji
-    # await bot.add_cog(JpCog(bot, bot.error_messages, bot.shiba_emoji))
-    print("JpCog setup function called (manual adding in main.py is recommended for passing resources).") # Renamed print statement
+    """Adds the JpCog to the bot, retrieving resources from the bot instance."""
+    # Retrieve the resources that main.py attached to the bot instance
+    error_messages = getattr(bot, 'error_messages', {})
+    # Note: SHIBA_EMOJI is stored inside bot.config in main.py
+    shiba_emoji = bot.config.get('shiba_emoji_string', '<:shiba:default_id>') # Use a default in case config wasn't loaded
+
+    # Create an instance of the cog, passing the bot and resources
+    cog_instance = JpCog(bot, error_messages, shiba_emoji)
+
+    # Add the instance to the bot
+    await bot.add_cog(cog_instance)
+
+    print(f"{cog_instance.qualified_name} cog loaded successfully via setup function.")
