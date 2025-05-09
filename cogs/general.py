@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import textwrap
 
 class GeneralCog(commands.Cog):
     def __init__(self, bot):
@@ -9,7 +10,7 @@ class GeneralCog(commands.Cog):
     async def help_command(self, ctx):
         """Shows the help message."""
 
-        help_message = f"""{self.bot.config.get('shiba_emoji_string', '...')} こんにちは！ しばこです。 (Hello! I'm Shibako.)
+        help_message = textwrap.dedent(f"""{self.bot.config.get('shiba_emoji_string', '...')} こんにちは！ しばこです。 (Hello! I'm Shibako.)
 
         わたしができること： (Things I can do:)
         `!tasukete` - Shows this help message.
@@ -24,7 +25,7 @@ class GeneralCog(commands.Cog):
         `shibako fetch`
         `!y` / `!n`
 
-        (ためしてみてね！ - Try them out!)"""
+        (ためしてみてね！ - Try them out!)""")
 
         try:
             await ctx.send(help_message)
