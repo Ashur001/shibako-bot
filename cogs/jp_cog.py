@@ -48,7 +48,7 @@ class JpCog(commands.Cog):
 
 
     # --- !romaji command ---
-    @commands.command(name='romaji')
+    @commands.command(name='romaji', aliases=['rj'])
     async def romaji_command(self, ctx, *text):
         """Converts Japanese text to Romaji."""
         text_to_convert = await self.get_text_from_context(ctx, text)

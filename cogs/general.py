@@ -6,7 +6,7 @@ class GeneralCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='tasukete')
+    @commands.command(name='tasukete', aliases=['h'])
     async def help_command(self, ctx):
         """Shows the help message."""
 
@@ -34,7 +34,7 @@ class GeneralCog(commands.Cog):
         except Exception as e:
             print(f"Error sending help message: {e}")
 
-    @commands.command(name ='phrases')
+    @commands.command(name ='phrases', aliases=['p'])
     async def phrases_command(self, ctx):
         """Prints all possible phrases to trigger shibako."""
 
